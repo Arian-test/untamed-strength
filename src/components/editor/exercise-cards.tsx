@@ -70,10 +70,28 @@ export function LogExerciseCard({
                   {s.isBackoff ? <span className="ml-1 text-[10px]">BO</span> : null}
                 </span>
                 <span>
-                  doel {s.targetReps} × @{s.targetRpe}
-                  {s.plannedWeight !== null ? ` · ${kgUnit(s.plannedWeight)}` : ""}
+                  doel {s.targetReps} reps @ RPE {s.targetRpe}
                 </span>
               </div>
+              {s.plannedWeight !== null ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateSet(blockId, dayId, exercise.id, s.id, {
+                      actualWeight: s.plannedWeight,
+                      actualReps: s.actualReps ?? s.targetReps,
+                    })
+                  }
+                  className="mb-2 flex w-full items-center justify-between rounded-md border border-primary/30 bg-primary/10 px-3 py-2 transition-colors active:bg-primary/20"
+                  aria-label="Voorstel overnemen"
+                >
+                  <span className="text-xs text-muted-foreground">
+                    Voorstel
+                    <span className="ml-1.5 text-base font-semibold text-foreground">{kgUnit(s.plannedWeight)}</span>
+                  </span>
+                  <span className="text-xs font-semibold text-primary">Overnemen ↓</span>
+                </button>
+              ) : null}
               <div className="grid grid-cols-3 gap-2">
                 <FieldInput
                   label="Gewicht"
