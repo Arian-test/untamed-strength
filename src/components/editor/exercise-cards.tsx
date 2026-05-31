@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, GripVertical, Plus, Trash2 } from "lucide-react";
+import { Copy, GripVertical, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useAppStore } from "@/store/useAppStore";
 import { RPE_STEPS, estimateE1rm } from "@/lib/rpe";
+import { autoregulate } from "@/lib/adaptive";
 import { kg, kgUnit } from "@/lib/format";
 import type { ExerciseEntry, LiftKey } from "@/lib/types";
 
@@ -43,8 +44,24 @@ export function LogExerciseCard({
   exercise: ExerciseEntry;
 }) {
   const updateSet = useAppStore((s) => s.updateSet);
+  const updateSetTarget = useAppStore((s) => s.updateSetTarget);
   const setExerciseNote = useAppStore((s) => s.setExerciseNote);
+  const autoregMode = useAppStore((s) => s.settings.autoregulation ?? "suggest");
+  const roundingKg = useAppStore((s) => s.settings.roundingKg);
   const live = bestE1rm(exercise);
+
+  const autoreg = autoregMode === "off" ? null : autoregulate(exercise, roundingKg);
+
+  // Auto mode: write the adjusted weights into the remaining sets' planned weight.
+  React.useEffect(() => {
+    if (autoregMode !== "auto" || !autoreg) return;
+    for (const [setId, w] of Object.entries(autoreg.suggestions)) {
+      const set = exercise.sets.find((x) => x.id === setId);
+      if (set && set.plannedWeight !== w) {
+        updateSetTarget(blockId, dayId, exercise.id, setId, { plannedWeight: w });
+      }
+    }
+  }, [autoregMode, autoreg, exercise.sets, exercise.id, blockId, dayId, updateSetTarget]);
 
   return (
     <Card>
@@ -61,8 +78,19 @@ export function LogExerciseCard({
           ) : null}
         </div>
 
+        {autoreg ? (
+          <div className="mb-3 flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent">
+            <Sparkles className="size-3.5 shrink-0" />
+            Gewicht aangepast voor resterende sets van deze oefening (tijdelijke e1RM {kgUnit(autoreg.tempE1rm)})
+            {autoregMode === "suggest" ? " — tik Overnemen om toe te passen" : ""}
+          </div>
+        ) : null}
+
         <div className="flex flex-col gap-2">
-          {exercise.sets.map((s) => (
+          {exercise.sets.map((s) => {
+            const suggestion = autoreg?.suggestions[s.id] ?? s.plannedWeight;
+            const adjusted = autoreg?.suggestions[s.id] !== undefined;
+            return (
             <div key={s.id} className="rounded-lg border border-border/70 bg-muted/20 p-2.5">
               <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">
@@ -73,21 +101,23 @@ export function LogExerciseCard({
                   doel {s.targetReps} reps @ RPE {s.targetRpe}
                 </span>
               </div>
-              {s.plannedWeight !== null ? (
+              {suggestion !== null ? (
                 <button
                   type="button"
                   onClick={() =>
                     updateSet(blockId, dayId, exercise.id, s.id, {
-                      actualWeight: s.plannedWeight,
+                      actualWeight: suggestion,
                       actualReps: s.actualReps ?? s.targetReps,
                     })
                   }
-                  className="mb-2 flex w-full items-center justify-between rounded-md border border-primary/30 bg-primary/10 px-3 py-2 transition-colors active:bg-primary/20"
+                  className={`mb-2 flex w-full items-center justify-between rounded-md border px-3 py-2 transition-colors active:bg-primary/20 ${
+                    adjusted ? "border-accent/50 bg-accent/10" : "border-primary/30 bg-primary/10"
+                  }`}
                   aria-label="Voorstel overnemen"
                 >
                   <span className="text-xs text-muted-foreground">
-                    Voorstel
-                    <span className="ml-1.5 text-base font-semibold text-foreground">{kgUnit(s.plannedWeight)}</span>
+                    {adjusted ? "Aangepast voorstel" : "Voorstel"}
+                    <span className="ml-1.5 text-base font-semibold text-foreground">{kgUnit(suggestion)}</span>
                   </span>
                   <span className="text-xs font-semibold text-primary">Overnemen ↓</span>
                 </button>
@@ -131,7 +161,8 @@ export function LogExerciseCard({
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <Input

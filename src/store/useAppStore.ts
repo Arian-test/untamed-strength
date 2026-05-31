@@ -25,7 +25,7 @@ import type {
 } from "@/lib/types";
 import { uid } from "@/lib/utils";
 
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
 
 interface AppState extends AppData {
   _hydrated: boolean;
@@ -80,7 +80,7 @@ const initialData: AppData = {
   activeBlockId: null,
   e1rmHistory: [],
   bodyweightLog: [],
-  settings: { roundingKg: 2.5, bodyweight: null },
+  settings: { roundingKg: 2.5, bodyweight: null, autoregulation: "suggest" },
 };
 
 function mapBlock(blocks: Block[], blockId: string, fn: (b: Block) => Block): Block[] {
@@ -429,6 +429,14 @@ export const useAppStore = create<AppState>()(
               })),
             })),
           }));
+        }
+        if (version < 3) {
+          state.settings = {
+            roundingKg: 2.5,
+            bodyweight: null,
+            autoregulation: "suggest",
+            ...(state.settings ?? {}),
+          };
         }
         return state as AppData;
       },

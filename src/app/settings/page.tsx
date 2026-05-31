@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import { useAppStore } from "@/store/useAppStore";
 import { todayIso } from "@/lib/format";
-import type { AppData } from "@/lib/types";
+import type { AppData, AutoregMode } from "@/lib/types";
 
 export default function SettingsPage() {
   const settings = useAppStore((s) => s.settings);
@@ -90,6 +91,23 @@ export default function SettingsPage() {
                 onChange={(e) => updateSettings({ roundingKg: Number(e.target.value) || 2.5 })}
                 className="w-32"
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="autoreg">Autoregulatie tijdens training</Label>
+              <Select
+                id="autoreg"
+                containerClassName="w-full sm:w-72"
+                value={settings.autoregulation ?? "suggest"}
+                onChange={(e) => updateSettings({ autoregulation: e.target.value as AutoregMode })}
+              >
+                <option value="off">Uit</option>
+                <option value="suggest">Alleen voorstel tonen</option>
+                <option value="auto">Automatisch toepassen</option>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Past het gewicht van de resterende sets van een oefening aan op basis van je werkelijke RPE — alleen
+                binnen die oefening en die training.
+              </p>
             </div>
           </CardContent>
         </Card>

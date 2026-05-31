@@ -1,5 +1,36 @@
-import { TRACKED_MUSCLES } from "./templates";
+import { MUSCLE_LABELS, TRACKED_MUSCLES, VOLUME_GUIDELINES } from "./templates";
 import type { Block, E1rmRecord, LiftKey, MuscleGroup, SessionDay } from "./types";
+
+export interface VolumeStatus {
+  muscle: MuscleGroup;
+  label: string;
+  sets: number;
+  min: number;
+  max: number;
+  state: "low" | "ok" | "high";
+}
+
+/** Effective sets per muscle group vs the weekly guidelines (default week 1). */
+export function volumeStatus(block: Block, weekNumber = 1): VolumeStatus[] {
+  const vols = weekVolume(block);
+  const wv = vols.find((v) => v.weekNumber === weekNumber) ?? vols[0];
+  const out: VolumeStatus[] = [];
+  for (const m of Object.keys(VOLUME_GUIDELINES) as MuscleGroup[]) {
+    const range = VOLUME_GUIDELINES[m];
+    if (!range) continue;
+    const [min, max] = range;
+    const sets = wv?.byMuscle[m]?.sets ?? 0;
+    out.push({
+      muscle: m,
+      label: MUSCLE_LABELS[m],
+      sets,
+      min,
+      max,
+      state: sets < min ? "low" : sets > max ? "high" : "ok",
+    });
+  }
+  return out;
+}
 
 /** Tonnage (kg) of a single set using actual values, falling back to planned. */
 function setTonnage(weight: number | null, plannedWeight: number | null, reps: number | null, targetReps: number): number {

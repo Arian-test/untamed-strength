@@ -11,10 +11,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { WEEK_SPECS } from "@/lib/periodization";
+import { WEEK_META, generateBlock } from "@/lib/periodization";
+import { volumeStatus } from "@/lib/analytics";
 import { trainingWeight } from "@/lib/rpe";
 import { kgUnit, todayIso } from "@/lib/format";
+
+// Top set of the competition lifts per week (mirrors the generator).
+const TOP_SET: Record<number, { reps: number; rpe: number }> = {
+  1: { reps: 5, rpe: 8 },
+  2: { reps: 5, rpe: 8.5 },
+  3: { reps: 4, rpe: 8.5 },
+  4: { reps: 3, rpe: 8.5 },
+  5: { reps: 1, rpe: 9 },
+};
 
 interface FormValues {
   name: string;
@@ -50,6 +61,14 @@ export default function BuilderPage() {
   const squat = Number(watch("squatE1rm")) || 0;
   const bench = Number(watch("benchE1rm")) || 0;
   const step = Number(watch("roundingKg")) || 2.5;
+
+  const volumes = useMemo(
+    () =>
+      volumeStatus(
+        generateBlock({ name: "preview", squatE1rm: squat, benchE1rm: bench, startDate: null, step }),
+      ),
+    [squat, bench, step],
+  );
 
   const [created, setCreated] = useState(false);
 
@@ -131,8 +150,8 @@ export default function BuilderPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {WEEK_SPECS.map((w) => {
-                  const top = w.main[0];
+                {WEEK_META.map((w) => {
+                  const top = TOP_SET[w.weekNumber];
                   const sq = trainingWeight(squat, top.reps, top.rpe, 1, step);
                   const bn = trainingWeight(bench, top.reps, top.rpe, 1, step);
                   return (
@@ -152,12 +171,51 @@ export default function BuilderPage() {
               </TableBody>
             </Table>
             <p className="mt-3 text-xs text-muted-foreground">
-              Werkgewicht = e1RM × percentage uit de RPE-chart, afgerond op {step} kg. Voor week 5 wordt de top-single
-              getoond; backoff-sets worden in de sessie berekend.
+              Topset-gewicht = e1RM × percentage uit de RPE-chart, afgerond op {step} kg. Backoffs & singles worden per
+              set in de sessie berekend.
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Volume check */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">Volumecheck (week 1, sets per spiergroep)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {volumes.map((v) => (
+              <div
+                key={v.muscle}
+                className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm ${
+                  v.state === "ok" ? "border-border" : "border-warn/50 bg-warn/5"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {v.state === "ok" ? (
+                    <CheckCircle2 className="size-4 text-primary" />
+                  ) : (
+                    <AlertTriangle className="size-4 text-warn" />
+                  )}
+                  {v.label}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  <span className={v.state !== "ok" ? "font-semibold text-warn" : "font-semibold text-foreground"}>
+                    {v.sets}
+                  </span>{" "}
+                  / {v.min}-{v.max}
+                  {v.state === "low" ? " ↓" : v.state === "high" ? " ↑" : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Richtlijn voor effectieve sets per week. Buiten bereik = waarschuwing; pas het concept aan na genereren
+            (oefeningen toevoegen/verwijderen) om binnen bereik te komen.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

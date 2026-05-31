@@ -1,5 +1,11 @@
 import { rpePercentage, trainingWeight } from "./rpe";
-import { DAY_TEMPLATES, type ExerciseTemplate } from "./templates";
+import {
+  DEFAULT_ACC_RPE,
+  PEAK_DAYS,
+  STANDARD_DAYS,
+  type DayTemplate,
+  type ExerciseTemplate,
+} from "./templates";
 import type {
   Block,
   BlockWeek,
@@ -11,57 +17,19 @@ import type {
 } from "./types";
 import { uid } from "./utils";
 
-interface SetPrescription {
-  reps: number;
-  rpe: number;
-  isBackoff: boolean;
-}
-
-export interface WeekSpec {
+export interface WeekMeta {
   weekNumber: number;
   phase: Phase;
   scheme: string;
-  /** Prescription for progressive (main/variation) lifts this week. */
-  main: SetPrescription[];
 }
 
-// The 5-week wave (Volume -> Intensification -> Peak).
-export const WEEK_SPECS: WeekSpec[] = [
-  {
-    weekNumber: 1,
-    phase: "Volume",
-    scheme: "5x5 @7",
-    main: Array.from({ length: 5 }, () => ({ reps: 5, rpe: 7, isBackoff: false })),
-  },
-  {
-    weekNumber: 2,
-    phase: "Volume",
-    scheme: "5x5 @7.5",
-    main: Array.from({ length: 5 }, () => ({ reps: 5, rpe: 7.5, isBackoff: false })),
-  },
-  {
-    weekNumber: 3,
-    phase: "Intensification",
-    scheme: "4x4 @8",
-    main: Array.from({ length: 4 }, () => ({ reps: 4, rpe: 8, isBackoff: false })),
-  },
-  {
-    weekNumber: 4,
-    phase: "Intensification",
-    scheme: "3x3 @8.5",
-    main: Array.from({ length: 3 }, () => ({ reps: 3, rpe: 8.5, isBackoff: false })),
-  },
-  {
-    weekNumber: 5,
-    phase: "Peak",
-    scheme: "Top single + backoffs",
-    main: [
-      { reps: 1, rpe: 9, isBackoff: false },
-      { reps: 3, rpe: 8, isBackoff: true },
-      { reps: 3, rpe: 8, isBackoff: true },
-      { reps: 3, rpe: 8, isBackoff: true },
-    ],
-  },
+// 5-week powerbuilding wave: volume -> intensification -> heavy -> peak.
+export const WEEK_META: WeekMeta[] = [
+  { weekNumber: 1, phase: "Volume", scheme: "Top 5 @8 · backoff 3x5 @7" },
+  { weekNumber: 2, phase: "Volume", scheme: "Top 5 @8.5 · backoff 3x5 @7.5" },
+  { weekNumber: 3, phase: "Intensification", scheme: "Top 4 @8.5 · backoff @7.5 · single @7.5" },
+  { weekNumber: 4, phase: "Intensification", scheme: "Zwaar · Top 3 @8.5 · single @8" },
+  { weekNumber: 5, phase: "Peak", scheme: "Piekweek · singles" },
 ];
 
 function e1rmFor(lift: LiftKey | null, squatE1rm: number, benchE1rm: number): number {
@@ -70,56 +38,40 @@ function e1rmFor(lift: LiftKey | null, squatE1rm: number, benchE1rm: number): nu
   return 0;
 }
 
-/** Build the set list for one exercise in one week. */
+/** Build the set list for one exercise template in a given week. */
 export function buildSets(
   template: ExerciseTemplate,
-  weekSpec: WeekSpec,
+  week: number,
   squatE1rm: number,
   benchE1rm: number,
   step: number,
 ): SetEntry[] {
-  const base = (n: number): Omit<SetEntry, "id"> => ({
-    setNumber: n,
-    targetReps: 0,
-    targetRpe: 0,
-    plannedWeight: null,
-    plannedManual: false,
-    isBackoff: false,
-    actualWeight: null,
-    actualReps: null,
-    actualRpe: null,
-  });
-
-  if (template.kind === "accessory" && template.accessory) {
-    const { sets, reps, rpe } = template.accessory;
-    return Array.from({ length: sets }, (_, i) => ({
-      ...base(i + 1),
-      id: uid("set_"),
-      targetReps: reps,
-      targetRpe: rpe,
-    }));
-  }
-
-  // Progressive main / variation lift.
   const e1rm = e1rmFor(template.lift, squatE1rm, benchE1rm);
-  // Variations train one RPE step easier than the comp lift.
-  const rpeAdjust = template.kind === "variation" ? -0.5 : 0;
-  return weekSpec.main.map((p, i) => {
-    const rpe = Math.max(6, p.rpe + rpeAdjust);
+  return template.build(week).map((spec, i) => {
+    const targetRpe = spec.rpe ?? DEFAULT_ACC_RPE;
+    // Auto weight only when the lift is e1RM-bound and the set has a real RPE.
+    const plannedWeight =
+      template.lift !== null && spec.rpe !== null
+        ? trainingWeight(e1rm, spec.reps, spec.rpe, template.factor, step)
+        : null;
     return {
-      ...base(i + 1),
       id: uid("set_"),
-      targetReps: p.reps,
-      targetRpe: rpe,
-      isBackoff: p.isBackoff,
-      plannedWeight: trainingWeight(e1rm, p.reps, rpe, template.factor, step),
+      setNumber: i + 1,
+      targetReps: spec.reps,
+      targetRpe,
+      plannedWeight,
+      plannedManual: false,
+      isBackoff: !!spec.isBackoff,
+      actualWeight: null,
+      actualReps: null,
+      actualRpe: null,
     };
   });
 }
 
 function buildExercise(
   template: ExerciseTemplate,
-  weekSpec: WeekSpec,
+  week: number,
   squatE1rm: number,
   benchE1rm: number,
   step: number,
@@ -131,25 +83,24 @@ function buildExercise(
     lift: template.lift,
     factor: template.factor,
     muscleGroups: template.muscleGroups,
-    sets: buildSets(template, weekSpec, squatE1rm, benchE1rm, step),
+    sets: buildSets(template, week, squatE1rm, benchE1rm, step),
     note: "",
   };
 }
 
 function buildDay(
-  weekSpec: WeekSpec,
-  dayTemplateIndex: number,
+  dt: DayTemplate,
+  week: number,
   squatE1rm: number,
   benchE1rm: number,
   step: number,
 ): SessionDay {
-  const dt = DAY_TEMPLATES[dayTemplateIndex];
   return {
     id: uid("day_"),
     dayKey: dt.dayKey,
     title: dt.title,
-    weekNumber: weekSpec.weekNumber,
-    exercises: dt.exercises.map((t) => buildExercise(t, weekSpec, squatE1rm, benchE1rm, step)),
+    weekNumber: week,
+    exercises: dt.exercises.map((t) => buildExercise(t, week, squatE1rm, benchE1rm, step)),
     readiness: null,
     note: "",
     plannedDate: null,
@@ -167,12 +118,15 @@ export interface NewBlockInput {
 
 export function generateBlock(input: NewBlockInput): Block {
   const { name, squatE1rm, benchE1rm, startDate, step } = input;
-  const weeks: BlockWeek[] = WEEK_SPECS.map((ws) => ({
-    weekNumber: ws.weekNumber,
-    phase: ws.phase,
-    scheme: ws.scheme,
-    days: DAY_TEMPLATES.map((_, i) => buildDay(ws, i, squatE1rm, benchE1rm, step)),
-  }));
+  const weeks: BlockWeek[] = WEEK_META.map((meta) => {
+    const days = meta.weekNumber < 5 ? STANDARD_DAYS : PEAK_DAYS;
+    return {
+      weekNumber: meta.weekNumber,
+      phase: meta.phase,
+      scheme: meta.scheme,
+      days: days.map((dt) => buildDay(dt, meta.weekNumber, squatE1rm, benchE1rm, step)),
+    };
+  });
 
   return {
     id: uid("block_"),

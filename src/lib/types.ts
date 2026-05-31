@@ -14,7 +14,10 @@ export type MuscleGroup =
   | "hamstrings"
   | "biceps"
   | "triceps"
+  | "calves"
   | "core";
+
+export type AutoregMode = "off" | "suggest" | "auto";
 
 export type ExerciseKind = "main" | "variation" | "accessory";
 
@@ -105,6 +108,7 @@ export interface BodyweightEntry {
 export interface Settings {
   roundingKg: number;
   bodyweight: number | null;
+  autoregulation: AutoregMode;
 }
 
 export interface AppData {

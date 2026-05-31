@@ -1,5 +1,41 @@
-import { estimateE1rm } from "./rpe";
+import { estimateE1rm, trainingWeight } from "./rpe";
 import type { Block, ExerciseEntry, LiftKey, SessionDay } from "./types";
+
+// --- In-session autoregulation (per exercise, per session only) -------------
+
+export interface AutoregResult {
+  /** Temporary e1RM derived from the last logged set of this exercise. */
+  tempE1rm: number;
+  refSetNumber: number;
+  /** New suggested weight per remaining (un-logged) set id. */
+  suggestions: Record<string, number>;
+}
+
+/**
+ * If a logged set deviated from its target RPE, derive a temporary e1RM and
+ * suggest adjusted weights for the remaining sets of the SAME exercise only.
+ * Returns null when nothing was logged or the last set hit its target RPE.
+ */
+export function autoregulate(ex: ExerciseEntry, roundingKg = 2.5): AutoregResult | null {
+  const logged = ex.sets.filter(
+    (s) => s.actualWeight !== null && s.actualReps !== null && s.actualRpe !== null,
+  );
+  if (!logged.length) return null;
+  const ref = logged.reduce((a, b) => (b.setNumber > a.setNumber ? b : a));
+  if (Math.abs((ref.actualRpe as number) - ref.targetRpe) < 0.5) return null; // on target
+
+  const tempE1rm = estimateE1rm(ref.actualWeight!, ref.actualReps!, ref.actualRpe!, ex.factor);
+  if (tempE1rm === null) return null;
+
+  const suggestions: Record<string, number> = {};
+  for (const s of ex.sets) {
+    if (s.setNumber <= ref.setNumber || s.actualWeight !== null) continue;
+    const w = trainingWeight(tempE1rm, s.targetReps, s.targetRpe, ex.factor, roundingKg);
+    if (w !== null) suggestions[s.id] = w;
+  }
+  if (Object.keys(suggestions).length === 0) return null;
+  return { tempE1rm: Math.round(tempE1rm * 10) / 10, refSetNumber: ref.setNumber, suggestions };
+}
 
 export interface WeightSuggestion {
   exerciseName: string;
