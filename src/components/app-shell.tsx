@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1">
         {/* Mobile top bar */}
-        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background px-4 py-3 md:hidden">
           <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Dumbbell className="size-4" />
           </div>
@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card md:hidden">
         {primary.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (

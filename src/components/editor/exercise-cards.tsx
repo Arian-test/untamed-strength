@@ -172,13 +172,13 @@ export function EditExerciseCard({
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   return (
-    <div ref={setNodeRef} style={style} className="touch-none">
+    <div ref={setNodeRef} style={style}>
       <Card>
       <CardContent className="p-3 sm:p-4">
         <div className="mb-3 flex items-center gap-2">
           <button
             type="button"
-            className="flex size-9 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+            className="flex size-9 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
             aria-label="Versleep oefening"
             {...attributes}
             {...listeners}
