@@ -42,4 +42,5 @@ next-env.d.ts
 
 # local-only editor/agent settings
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .xlsx_extract/
