@@ -39,7 +39,7 @@ export default function DraftEditPage() {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-44 md:pb-24">
       <PageHeader
         title="Concept bewerken"
         description={`${block.name} · pas alles aan en sla daarna op`}
@@ -119,8 +119,8 @@ export default function DraftEditPage() {
         </>
       ) : null}
 
-      {/* Sticky action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur md:left-60">
+      {/* Sticky action bar — sits above the mobile bottom-nav (h-16), full bottom on desktop */}
+      <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-background/95 backdrop-blur md:bottom-0 md:left-60 md:z-30">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-3">
           <Button
             variant="ghost"
