@@ -7,6 +7,8 @@ import { ServiceWorkerRegister } from "@/components/service-worker";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const metadata: Metadata = {
   title: "Untamed Strength",
   description: "Persoonlijke kracht- & hypertrofie-trainingsapp",
@@ -18,10 +20,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: `${BASE}/icons/icon-192.png`, sizes: "192x192", type: "image/png" },
+      { url: `${BASE}/icons/icon-512.png`, sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-icon-180.png", sizes: "180x180", type: "image/png" }],
+    apple: [{ url: `${BASE}/icons/apple-icon-180.png`, sizes: "180x180", type: "image/png" }],
   },
 };
 

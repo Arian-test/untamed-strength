@@ -63,7 +63,7 @@ export default function BuilderPage() {
       step: Number(v.roundingKg) || 2.5,
     });
     setCreated(true);
-    router.push(`/builder/edit/${id}`);
+    router.push(`/builder/edit?block=${id}`);
   };
 
   return (

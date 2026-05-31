@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Lock, LockOpen, RotateCcw, TrendingUp } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -34,9 +34,8 @@ const READINESS_FIELDS: { key: keyof Readiness; label: string }[] = [
   { key: "fatigue", label: "Vermoeidheid" },
 ];
 
-export default function SessionPage() {
-  const params = useParams<{ dayId: string }>();
-  const dayId = params.dayId;
+function SessionInner() {
+  const dayId = useSearchParams().get("day") ?? "";
   const blocks = useAppStore((s) => s.blocks);
   const setDayNote = useAppStore((s) => s.setDayNote);
   const setReadiness = useAppStore((s) => s.setReadiness);
@@ -246,5 +245,13 @@ export default function SessionPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function SessionPage() {
+  return (
+    <Suspense fallback={<div className="px-1 py-10 text-sm text-muted-foreground">Laden…</div>}>
+      <SessionInner />
+    </Suspense>
   );
 }

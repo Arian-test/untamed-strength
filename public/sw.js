@@ -1,12 +1,9 @@
-// Minimal service worker: precache the app shell and serve cached navigations
-// offline. Data lives in IndexedDB, so the app works fully offline once loaded.
-const CACHE = "untamed-v1";
-const SHELL = ["/", "/train", "/builder", "/progress", "/manifest.webmanifest"];
+// Minimal, path-agnostic service worker. Works under any base path
+// (root or /repo/ on GitHub Pages). Data lives in IndexedDB, so the app
+// works offline once its assets are cached at runtime.
+const CACHE = "untamed-v2";
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL).catch(() => undefined)),
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -21,7 +18,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
-  // Navigations: network-first, fall back to cached shell when offline.
+  // Navigations: network-first, fall back to a cached copy when offline.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -30,12 +27,12 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE).then((c) => c.put(request, copy));
           return res;
         })
-        .catch(() => caches.match(request).then((r) => r || caches.match("/"))),
+        .catch(() => caches.match(request).then((r) => r || caches.match(self.registration.scope))),
     );
     return;
   }
 
-  // Static assets: cache-first.
+  // Build assets & icons: cache-first.
   if (request.url.includes("/_next/") || request.url.includes("/icons/")) {
     event.respondWith(
       caches.match(request).then(

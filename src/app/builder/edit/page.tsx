@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Trash2 } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,9 @@ import { ExerciseList } from "@/components/editor/exercise-list";
 import { useAppStore } from "@/store/useAppStore";
 import { DAY_LABELS } from "@/lib/templates";
 
-export default function DraftEditPage() {
-  const params = useParams<{ blockId: string }>();
+function DraftEditInner() {
   const router = useRouter();
-  const blockId = params.blockId;
+  const blockId = useSearchParams().get("block") ?? "";
 
   const block = useAppStore((s) => s.blocks.find((b) => b.id === blockId) ?? null);
   const updateBlockE1rm = useAppStore((s) => s.updateBlockE1rm);
@@ -146,5 +145,13 @@ export default function DraftEditPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DraftEditPage() {
+  return (
+    <Suspense fallback={<div className="px-1 py-10 text-sm text-muted-foreground">Laden…</div>}>
+      <DraftEditInner />
+    </Suspense>
   );
 }

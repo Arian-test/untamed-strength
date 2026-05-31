@@ -98,7 +98,7 @@ export default function TrainPage() {
           const done = !!day.completedAt;
           const started = logged > 0;
           return (
-            <Link key={day.id} href={`/session/${day.id}`}>
+            <Link key={day.id} href={`/session?day=${day.id}`}>
               <Card className="transition-colors hover:border-primary/60">
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">

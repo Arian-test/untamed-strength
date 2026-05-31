@@ -77,7 +77,7 @@ export default function CalendarPage() {
                 else if (date && date < today) status = "missed";
 
                 return (
-                  <Link key={day.id} href={`/session/${day.id}`}>
+                  <Link key={day.id} href={`/session?day=${day.id}`}>
                     <div
                       className={`flex items-center gap-2 rounded-md border p-3 transition-colors hover:bg-muted/40 ${
                         status === "done"
