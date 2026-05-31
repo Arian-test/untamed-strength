@@ -29,7 +29,8 @@ export const viewport: Viewport = {
   themeColor: "#0b1220",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // No maximum-scale: iOS ignores it for auto-zoom anyway, and blocking
+  // pinch-zoom hurts accessibility. 16px inputs (globals.css) prevent the zoom.
   viewportFit: "cover",
 };
 

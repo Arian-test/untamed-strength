@@ -97,3 +97,15 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/*
+  iOS Safari auto-zooms when focusing a form control whose font-size is < 16px,
+  and does not zoom back out. Force >= 16px on phones so the page never zooms in.
+*/
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
