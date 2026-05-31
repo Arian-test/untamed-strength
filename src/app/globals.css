@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/*
+  Dark-first, data-driven theme inspired by Hevy / RTS / Notion.
+  Colors are HSL channel triplets so we can compose with /opacity.
+*/
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 20% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 20% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 46%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 199 89% 48%;
+  --accent-foreground: 0 0% 100%;
+  --warn: 38 92% 50%;
+  --danger: 0 72% 51%;
+  --ring: 142 71% 45%;
+  --radius: 0.6rem;
+}
+
+.dark {
+  --background: 222 24% 7%;
+  --foreground: 210 20% 96%;
+  --card: 222 22% 10%;
+  --card-foreground: 210 20% 96%;
+  --muted: 220 16% 16%;
+  --muted-foreground: 218 11% 60%;
+  --border: 220 16% 18%;
+  --input: 220 16% 20%;
+  --primary: 142 69% 48%;
+  --primary-foreground: 222 47% 8%;
+  --accent: 199 89% 52%;
+  --accent-foreground: 222 47% 8%;
+  --warn: 38 95% 56%;
+  --danger: 0 72% 58%;
+  --ring: 142 69% 48%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-warn: hsl(var(--warn));
+  --color-danger: hsl(var(--danger));
+  --color-ring: hsl(var(--ring));
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin scrollbars that match the dark theme. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hide number input spinners for tidy data entry. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
