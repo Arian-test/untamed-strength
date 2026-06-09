@@ -11,8 +11,8 @@ import { DAY_LABELS } from "@/lib/templates";
 import { formatDate } from "@/lib/format";
 import type { DayKey } from "@/lib/types";
 
-// Week starts on Sunday: Sun=0, Mon=+1, Wed=+3, Thu=+4.
-const DAY_OFFSET: Record<DayKey, number> = { sun: 0, mon: 1, wed: 3, thu: 4 };
+// Days within a week, counted from Monday.
+const DAY_OFFSET: Record<DayKey, number> = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
 
 function plannedDate(startDate: string | null, weekNumber: number, dayKey: DayKey): Date | null {
   if (!startDate) return null;

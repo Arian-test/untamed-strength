@@ -1,6 +1,33 @@
 import { estimateE1rm, trainingWeight } from "./rpe";
 import type { Block, ExerciseEntry, LiftKey, SessionDay } from "./types";
 
+// --- Double progression (week over week, "beat last week") ------------------
+
+export interface ProgressionInfo {
+  lastSets: { weight: number; reps: number }[];
+  /** Heaviest working weight logged last week. */
+  lastWeight: number;
+  /** True if every logged set reached the top of its rep range last week. */
+  hitTop: boolean;
+  /** Suggested working weight for this week. */
+  suggested: number;
+}
+
+/**
+ * Look at the same exercise from the previous week and propose this week's
+ * weight: repeat the load, or add `step` once every set hit the top of its
+ * rep range last week.
+ */
+export function doubleProgression(prevEx: ExerciseEntry, step = 2.5): ProgressionInfo | null {
+  const logged = prevEx.sets.filter((s) => s.actualWeight !== null && s.actualReps !== null);
+  if (!logged.length) return null;
+  const lastSets = logged.map((s) => ({ weight: s.actualWeight as number, reps: s.actualReps as number }));
+  const lastWeight = Math.max(...lastSets.map((s) => s.weight));
+  const hitTop = logged.every((s) => (s.actualReps as number) >= (s.targetRepsMax ?? s.targetReps));
+  const suggested = hitTop ? lastWeight + step : lastWeight;
+  return { lastSets, lastWeight, hitTop, suggested };
+}
+
 // --- In-session autoregulation (per exercise, per session only) -------------
 
 export interface AutoregResult {

@@ -67,6 +67,8 @@ function SessionInner() {
   }
 
   const { block, week, day } = found;
+  const weekIdx = block.weeks.findIndex((w) => w.weekNumber === week.weekNumber);
+  const prevDay = weekIdx > 0 ? block.weeks[weekIdx - 1].days.find((d) => d.dayKey === day.dayKey) ?? null : null;
   const editing = !block.structureLocked;
   const suggestions = analyzeSession(day, roundingKg);
   const readiness = day.readiness;
@@ -194,7 +196,13 @@ function SessionInner() {
       ) : null}
 
       {/* Exercises */}
-      <ExerciseList blockId={block.id} dayId={day.id} exercises={day.exercises} mode={editing ? "edit" : "log"} />
+      <ExerciseList
+        blockId={block.id}
+        dayId={day.id}
+        exercises={day.exercises}
+        mode={editing ? "edit" : "log"}
+        prevExercises={prevDay?.exercises}
+      />
 
       {/* Day note */}
       <Card className="mt-4">

@@ -28,11 +28,13 @@ export function ExerciseList({
   dayId,
   exercises,
   mode,
+  prevExercises,
 }: {
   blockId: string;
   dayId: string;
   exercises: ExerciseEntry[];
   mode: "edit" | "log";
+  prevExercises?: ExerciseEntry[];
 }) {
   const reorderExercises = useAppStore((s) => s.reorderExercises);
   const addExercise = useAppStore((s) => s.addExercise);
@@ -46,8 +48,14 @@ export function ExerciseList({
   if (mode === "log") {
     return (
       <div className="flex flex-col gap-3">
-        {exercises.map((ex) => (
-          <LogExerciseCard key={ex.id} blockId={blockId} dayId={dayId} exercise={ex} />
+        {exercises.map((ex, i) => (
+          <LogExerciseCard
+            key={ex.id}
+            blockId={blockId}
+            dayId={dayId}
+            exercise={ex}
+            prevExercise={prevExercises?.[i]}
+          />
         ))}
       </div>
     );

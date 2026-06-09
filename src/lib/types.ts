@@ -2,7 +2,7 @@
 
 export type LiftKey = "squat" | "bench";
 
-export type DayKey = "mon" | "wed" | "thu" | "sun";
+export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export type Phase = "Volume" | "Intensification" | "Peak";
 
@@ -24,7 +24,11 @@ export type ExerciseKind = "main" | "variation" | "accessory";
 export interface SetEntry {
   id: string;
   setNumber: number;
+  /** Lower bound of the rep range (working target). */
   targetReps: number;
+  /** Upper bound of the rep range for double progression; null = single target. */
+  targetRepsMax: number | null;
+  /** Target RPE; 0 means "no RPE target" (pure rep-range / double-progression). */
   targetRpe: number;
   /** Auto-calculated planned weight for main/variation lifts; null for accessories. */
   plannedWeight: number | null;

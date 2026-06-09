@@ -1,7 +1,6 @@
 import { rpePercentage, trainingWeight } from "./rpe";
 import {
   DEFAULT_ACC_RPE,
-  PEAK_DAYS,
   STANDARD_DAYS,
   type DayTemplate,
   type ExerciseTemplate,
@@ -23,13 +22,14 @@ export interface WeekMeta {
   scheme: string;
 }
 
-// 5-week powerbuilding wave: volume -> intensification -> heavy -> peak.
+// 5-week hypertrophy block. Same exercises each week; load climbs via double
+// progression (beat last week's reps, then add weight).
 export const WEEK_META: WeekMeta[] = [
-  { weekNumber: 1, phase: "Volume", scheme: "Top 5 @8 · backoff 3x5 @7" },
-  { weekNumber: 2, phase: "Volume", scheme: "Top 5 @8.5 · backoff 3x5 @7.5" },
-  { weekNumber: 3, phase: "Intensification", scheme: "Top 4 @8.5 · backoff @7.5 · single @7.5" },
-  { weekNumber: 4, phase: "Intensification", scheme: "Zwaar · Top 3 @8.5 · single @8" },
-  { weekNumber: 5, phase: "Peak", scheme: "Piekweek · singles" },
+  { weekNumber: 1, phase: "Volume", scheme: "Basis — kies je startgewichten" },
+  { weekNumber: 2, phase: "Volume", scheme: "Progressieve overload" },
+  { weekNumber: 3, phase: "Volume", scheme: "Progressieve overload" },
+  { weekNumber: 4, phase: "Volume", scheme: "Progressieve overload" },
+  { weekNumber: 5, phase: "Volume", scheme: "Progressieve overload" },
 ];
 
 function e1rmFor(lift: LiftKey | null, squatE1rm: number, benchE1rm: number): number {
@@ -58,6 +58,7 @@ export function buildSets(
       id: uid("set_"),
       setNumber: i + 1,
       targetReps: spec.reps,
+      targetRepsMax: spec.repsMax ?? null,
       targetRpe,
       plannedWeight,
       plannedManual: false,
@@ -119,7 +120,7 @@ export interface NewBlockInput {
 export function generateBlock(input: NewBlockInput): Block {
   const { name, squatE1rm, benchE1rm, startDate, step } = input;
   const weeks: BlockWeek[] = WEEK_META.map((meta) => {
-    const days = meta.weekNumber < 5 ? STANDARD_DAYS : PEAK_DAYS;
+    const days = STANDARD_DAYS;
     return {
       weekNumber: meta.weekNumber,
       phase: meta.phase,
@@ -207,6 +208,7 @@ export function newSet(setNumber: number, ref?: Partial<SetEntry>): SetEntry {
     id: uid("set_"),
     setNumber,
     targetReps: ref?.targetReps ?? 8,
+    targetRepsMax: ref?.targetRepsMax ?? null,
     targetRpe: ref?.targetRpe ?? 8,
     plannedWeight: ref?.plannedWeight ?? null,
     plannedManual: ref?.plannedManual ?? false,

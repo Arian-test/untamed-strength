@@ -3,29 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Hammer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Hammer } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { WEEK_META, generateBlock } from "@/lib/periodization";
+import { generateBlock } from "@/lib/periodization";
 import { volumeStatus } from "@/lib/analytics";
-import { trainingWeight } from "@/lib/rpe";
-import { kgUnit, todayIso } from "@/lib/format";
-
-// Top set of the competition lifts per week (mirrors the generator).
-const TOP_SET: Record<number, { reps: number; rpe: number }> = {
-  1: { reps: 5, rpe: 8 },
-  2: { reps: 5, rpe: 8.5 },
-  3: { reps: 4, rpe: 8.5 },
-  4: { reps: 3, rpe: 8.5 },
-  5: { reps: 1, rpe: 9 },
-};
+import { DAY_LABELS, STANDARD_DAYS } from "@/lib/templates";
+import { todayIso } from "@/lib/format";
 
 interface FormValues {
   name: string;
@@ -42,11 +30,7 @@ export default function BuilderPage() {
   const updateSettings = useAppStore((s) => s.updateSettings);
 
   const committed = blocks.filter((b) => !b.draft);
-  const defaultName = useMemo(() => {
-    const base = 2;
-    const n = committed.length + 1;
-    return `Blok ${base}.${n}`;
-  }, [committed.length]);
+  const defaultName = useMemo(() => `Blok ${committed.length + 1}`, [committed.length]);
 
   const { register, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: {
@@ -89,7 +73,7 @@ export default function BuilderPage() {
     <div>
       <PageHeader
         title="Program Builder"
-        description="Genereer automatisch een 5-wekenblok op basis van je Squat- en Bench-e1RM."
+        description="Genereer een 5-weken PPL + Upper-blok. Elke week dezelfde oefeningen — je gaat progressief zwaarder (double progression)."
       />
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
@@ -113,6 +97,10 @@ export default function BuilderPage() {
                   <Input id="bench" type="number" step="0.5" {...register("benchE1rm")} />
                 </div>
               </div>
+              <p className="-mt-1 text-xs text-muted-foreground">
+                Referentie voor je dashboard. Gewichten kies je zelf per oefening; de app stelt elke week een hoger
+                gewicht voor zodra je de reps haalt.
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="start">Startdatum</Label>
@@ -134,46 +122,23 @@ export default function BuilderPage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Voorbeeld hoofdliften</CardTitle>
-            <span className="text-xs text-muted-foreground">Afronden op {step} kg</span>
+          <CardHeader>
+            <CardTitle>De split</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Week</TableHead>
-                  <TableHead>Fase</TableHead>
-                  <TableHead>Schema</TableHead>
-                  <TableHead className="text-right">Squat</TableHead>
-                  <TableHead className="text-right">Bench</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {WEEK_META.map((w) => {
-                  const top = TOP_SET[w.weekNumber];
-                  const sq = trainingWeight(squat, top.reps, top.rpe, 1, step);
-                  const bn = trainingWeight(bench, top.reps, top.rpe, 1, step);
-                  return (
-                    <TableRow key={w.weekNumber}>
-                      <TableCell className="font-medium">{w.weekNumber}</TableCell>
-                      <TableCell>
-                        <Badge variant={w.phase === "Peak" ? "warn" : w.phase === "Intensification" ? "accent" : "muted"}>
-                          {w.phase}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{w.scheme}</TableCell>
-                      <TableCell className="text-right tabular-nums">{kgUnit(sq)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{kgUnit(bn)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Topset-gewicht = e1RM × percentage uit de RPE-chart, afgerond op {step} kg. Backoffs & singles worden per
-              set in de sessie berekend.
-            </p>
+          <CardContent className="flex flex-col gap-2">
+            {STANDARD_DAYS.map((d) => (
+              <div key={d.dayKey} className="rounded-md border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">
+                    {DAY_LABELS[d.dayKey]} · {d.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{d.exercises.length} oefeningen</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {d.exercises.map((e) => e.name).join(" · ")}
+                </p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -181,7 +146,7 @@ export default function BuilderPage() {
       {/* Volume check */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">Volumecheck (week 1, sets per spiergroep)</CardTitle>
+          <CardTitle className="text-base">Volumecheck (sets per spiergroep per week)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -211,7 +176,7 @@ export default function BuilderPage() {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Richtlijn voor effectieve sets per week. Buiten bereik = waarschuwing; pas het concept aan na genereren
+            Richtlijn voor effectieve sets per week. Buiten bereik = waarschuwing; je kunt het concept aanpassen
             (oefeningen toevoegen/verwijderen) om binnen bereik te komen.
           </p>
         </CardContent>

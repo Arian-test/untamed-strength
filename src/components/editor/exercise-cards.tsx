@@ -11,9 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useAppStore } from "@/store/useAppStore";
 import { RPE_STEPS, estimateE1rm } from "@/lib/rpe";
-import { autoregulate } from "@/lib/adaptive";
+import { autoregulate, doubleProgression } from "@/lib/adaptive";
 import { kg, kgUnit } from "@/lib/format";
 import type { ExerciseEntry, LiftKey } from "@/lib/types";
+
+function repTarget(reps: number, repsMax: number | null, rpe: number): string {
+  const range = repsMax && repsMax !== reps ? `${reps}-${repsMax}` : `${reps}`;
+  return rpe >= 6 ? `doel ${range} reps @ RPE ${rpe}` : `doel ${range} reps`;
+}
 
 function bestE1rm(ex: ExerciseEntry): number | null {
   let best: number | null = null;
@@ -26,9 +31,9 @@ function bestE1rm(ex: ExerciseEntry): number | null {
 }
 
 function kindBadge(ex: ExerciseEntry) {
-  if (ex.lift === "squat") return <Badge variant="default">Auto · Squat</Badge>;
-  if (ex.lift === "bench") return <Badge variant="accent">Auto · Bench</Badge>;
-  return <Badge variant="muted">Handmatig</Badge>;
+  if (ex.lift === "squat") return <Badge variant="default">Squat</Badge>;
+  if (ex.lift === "bench") return <Badge variant="accent">Bench</Badge>;
+  return null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -38,10 +43,12 @@ export function LogExerciseCard({
   blockId,
   dayId,
   exercise,
+  prevExercise,
 }: {
   blockId: string;
   dayId: string;
   exercise: ExerciseEntry;
+  prevExercise?: ExerciseEntry;
 }) {
   const updateSet = useAppStore((s) => s.updateSet);
   const updateSetTarget = useAppStore((s) => s.updateSetTarget);
@@ -51,6 +58,7 @@ export function LogExerciseCard({
   const live = bestE1rm(exercise);
 
   const autoreg = autoregMode === "off" ? null : autoregulate(exercise, roundingKg);
+  const progression = prevExercise ? doubleProgression(prevExercise, roundingKg) : null;
 
   // Auto mode: write the adjusted weights into the remaining sets' planned weight.
   React.useEffect(() => {
@@ -78,6 +86,19 @@ export function LogExerciseCard({
           ) : null}
         </div>
 
+        {progression ? (
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <span>
+              <span className="font-medium text-foreground">Vorige week:</span>{" "}
+              {progression.lastSets.map((ls) => `${kg(ls.weight)}×${ls.reps}`).join(", ")}
+            </span>
+            <span className="ml-auto">
+              Voorstel <span className="font-semibold text-foreground">{kgUnit(progression.suggested)}</span>
+              {progression.hitTop ? " ↑" : ""}
+            </span>
+          </div>
+        ) : null}
+
         {autoreg ? (
           <div className="mb-3 flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent">
             <Sparkles className="size-3.5 shrink-0" />
@@ -88,7 +109,7 @@ export function LogExerciseCard({
 
         <div className="flex flex-col gap-2">
           {exercise.sets.map((s) => {
-            const suggestion = autoreg?.suggestions[s.id] ?? s.plannedWeight;
+            const suggestion = autoreg?.suggestions[s.id] ?? s.plannedWeight ?? progression?.suggested ?? null;
             const adjusted = autoreg?.suggestions[s.id] !== undefined;
             return (
             <div key={s.id} className="rounded-lg border border-border/70 bg-muted/20 p-2.5">
@@ -97,9 +118,7 @@ export function LogExerciseCard({
                   Set {s.setNumber}
                   {s.isBackoff ? <span className="ml-1 text-[10px]">BO</span> : null}
                 </span>
-                <span>
-                  doel {s.targetReps} reps @ RPE {s.targetRpe}
-                </span>
+                <span>{repTarget(s.targetReps, s.targetRepsMax, s.targetRpe)}</span>
               </div>
               {suggestion !== null ? (
                 <button
@@ -289,6 +308,7 @@ export function EditExerciseCard({
                 value={s.targetRpe}
                 onChange={(e) => updateSetTarget(blockId, dayId, exercise.id, s.id, { targetRpe: Number(e.target.value) })}
               >
+                <option value={0}>–</option>
                 {RPE_STEPS.map((r) => (
                   <option key={r} value={r}>
                     {r}
